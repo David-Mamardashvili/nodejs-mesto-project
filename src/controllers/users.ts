@@ -11,13 +11,12 @@ export const getUserById = (req: Request, res: Response) => {
   const { userId } = req.params;
 
   User.findById(userId)
-    .then((user) => {
-      if (!user) {
+    .orFail(() => new Error("NotFound"))
+    .then((user) => res.status(200).send(user))
+    .catch((err) => {
+      if (err.message === "NotFound") {
         return res.status(404).send({ message: "Пользователь не найден" });
       }
-      res.status(200).send(user);
-    })
-    .catch((err) => {
       if (err.name === "CastError") {
         return res
           .status(400)
@@ -51,15 +50,14 @@ export const updateProfile = (req: Request, res: Response) => {
     { name, about },
     { new: true, runValidators: true }
   )
-    .then((user) => {
-      if (!user) {
+    .orFail(() => new Error("NotFound"))
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err.message === "NotFound") {
         return res
           .status(404)
           .send({ message: "Пользователь с указанным _id не найден" });
       }
-      res.send(user);
-    })
-    .catch((err) => {
       if (err.name === "ValidationError") {
         return res.status(400).send({
           message: "Переданы некорректные данные при обновлении профиля",
@@ -74,15 +72,14 @@ export const updateAvatar = (req: Request, res: Response) => {
   const userId = req.user._id;
 
   User.findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
-    .then((user) => {
-      if (!user) {
+    .orFail(() => new Error("NotFound"))
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err.message === "NotFound") {
         return res
           .status(404)
           .send({ message: "Пользователь с указанным _id не найден" });
       }
-      res.send(user);
-    })
-    .catch((err) => {
       if (err.name === "ValidationError") {
         return res.status(400).send({
           message: "Переданы некорректные данные при обновлении аватара",
