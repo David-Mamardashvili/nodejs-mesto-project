@@ -6,8 +6,11 @@ import {
   likeCard,
   dislikeCard,
 } from "../controllers/cards";
+import { auth } from "../middlewares/auth";
 
 const router = express.Router();
+
+router.use(auth);
 
 router.get("/", getCards);
 

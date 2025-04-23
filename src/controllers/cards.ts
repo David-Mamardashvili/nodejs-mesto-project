@@ -1,13 +1,16 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import Card from "../models/card";
+import NotFoundError from "../errors/NotFoundError";
+import BadRequestError from "../errors/BadRequestError";
+import ForbiddenError from "../errors/ForbiddenError";
 
-export const getCards = (req: Request, res: Response) => {
+export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
     .then((cards) => res.status(200).send(cards))
-    .catch(() => res.status(500).send({ message: "Ошибка по умолчанию" }));
+    .catch(next);
 };
 
-export const createCard = (req: Request, res: Response) => {
+export const createCard = (req: Request, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
   const owner = req.user._id;
 
@@ -15,38 +18,39 @@ export const createCard = (req: Request, res: Response) => {
     .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return res.status(400).send({
-          message: "Переданы некорректные данные при создании карточки",
-        });
+        return next(
+          new BadRequestError(
+            "Переданы некорректные данные при создании карточки"
+          )
+        );
       }
-      res.status(500).send({ message: "Ошибка по умолчанию" });
+      return next(err);
     });
 };
 
-export const deleteCard = (req: Request, res: Response) => {
+export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
   const { cardId } = req.params;
+  const userId = req.user._id;
 
-  Card.findByIdAndDelete(cardId)
-    .orFail(() => new Error("NotFound"))
-    .then(() => {
-      res.status(200).send({ message: "Карточка удалена" });
+  Card.findById(cardId)
+    .orFail(() => new NotFoundError("Карточка не найдена"))
+    .then((card) => {
+      if (card.owner.toString() !== userId) {
+        throw new ForbiddenError("Вы не можете удалить чужую карточку");
+      }
+      return Card.findByIdAndDelete(cardId).then(() =>
+        res.status(200).send({ message: "Карточка удалена" })
+      );
     })
     .catch((err) => {
-      if (err.message === "NotFound") {
-        return res
-          .status(404)
-          .send({ message: "Карточка с указанным _id не найдена" });
-      }
       if (err.name === "CastError") {
-        return res
-          .status(400)
-          .send({ message: "Передан некорректный _id карточки" });
+        return next(new BadRequestError("Некорректный _id карточки"));
       }
-      res.status(500).send({ message: "Ошибка по умолчанию" });
+      return next(err);
     });
 };
 
-export const likeCard = (req: Request, res: Response) => {
+export const likeCard = (req: Request, res: Response, next: NextFunction) => {
   const { cardId } = req.params;
   const userId = req.user._id;
 
@@ -55,25 +59,23 @@ export const likeCard = (req: Request, res: Response) => {
     { $addToSet: { likes: userId } },
     { new: true, runValidators: true }
   )
-    .orFail(() => new Error("NotFound"))
+    .orFail(() => new NotFoundError("Передан несуществующий _id карточки"))
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.message === "NotFound") {
-        return res
-          .status(404)
-          .send({ message: "Передан несуществующий _id карточки" });
-      }
       if (err.name === "CastError") {
-        return res.status(400).send({
-          message:
-            "Переданы некорректные данные для постановки лайка или некорректный _id карточки",
-        });
+        return next(
+          new BadRequestError("Некорректные данные для постановки лайка")
+        );
       }
-      res.status(500).send({ message: "Ошибка по умолчанию" });
+      return next(err);
     });
 };
 
-export const dislikeCard = (req: Request, res: Response) => {
+export const dislikeCard = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const { cardId } = req.params;
   const userId = req.user._id;
 
@@ -82,20 +84,14 @@ export const dislikeCard = (req: Request, res: Response) => {
     { $pull: { likes: userId } },
     { new: true, runValidators: true }
   )
-    .orFail(() => new Error("NotFound"))
+    .orFail(() => new NotFoundError("Передан несуществующий _id карточки"))
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.message === "NotFound") {
-        return res
-          .status(404)
-          .send({ message: "Передан несуществующий _id карточки" });
-      }
       if (err.name === "CastError") {
-        return res.status(400).send({
-          message:
-            "Переданы некорректные данные для снятия лайка или некорректный _id карточки",
-        });
+        return next(
+          new BadRequestError("Некорректные данные для снятия лайка")
+        );
       }
-      res.status(500).send({ message: "Ошибка по умолчанию" });
+      return next(err);
     });
 };

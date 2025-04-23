@@ -4,15 +4,20 @@ logs
 npm-debug.log*
 
 # Dependency directory
-node_modules
+node_modules/
 
 # Optional npm cache directory
 .npm
 
 # Optional REPL history
 .DS_Store
-.idea
-.vscode
+.idea/
+.vscode/
 
 # Typescript build
-dist
+dist/
+
+# Env files
+.env
+.env.local
+.env.*.local
