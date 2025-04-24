@@ -4,7 +4,7 @@ import Card, { ICard } from "../models/card";
 import NotFoundError from "../errors/NotFoundError";
 import BadRequestError from "../errors/BadRequestError";
 import ForbiddenError from "../errors/ForbiddenError";
-import { STATUS_CODES } from "../utils/constants";
+import { STATUS_CODES, MESSAGES } from "../utils/constants";
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => {
   Card.find({})
@@ -20,11 +20,7 @@ export const createCard = (req: Request, res: Response, next: NextFunction) => {
     .then((card) => res.status(STATUS_CODES.CREATED).send(card))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next(
-          new BadRequestError(
-            "Переданы некорректные данные при создании карточки"
-          )
-        );
+        return next(new BadRequestError(MESSAGES.BAD_REQUEST_CARD_CREATE));
       }
       return next(err);
     });
@@ -35,19 +31,19 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) => {
   const userId = String(req.user._id);
 
   Card.findById(cardId)
-    .orFail(() => new NotFoundError("Карточка не найдена"))
+    .orFail(() => new NotFoundError(MESSAGES.CARD_NOT_FOUND))
     .then((card) => {
       if (card.owner.toString() !== userId) {
-        throw new ForbiddenError("Вы не можете удалить чужую карточку");
+        throw new ForbiddenError(MESSAGES.FORBIDDEN_CARD_DELETE);
       }
 
       return Card.findByIdAndDelete(cardId).then(() =>
-        res.status(STATUS_CODES.OK).send({ message: "Карточка удалена" })
+        res.status(STATUS_CODES.OK).send({ message: MESSAGES.CARD_DELETED })
       );
     })
     .catch((err) => {
       if (err.name === "CastError") {
-        return next(new BadRequestError("Некорректный _id карточки"));
+        return next(new BadRequestError(MESSAGES.INVALID_CARD_ID));
       }
       return next(err);
     });
@@ -62,13 +58,11 @@ const updateCardLikes = (
   const { cardId } = req.params;
 
   Card.findByIdAndUpdate(cardId, update, { new: true, runValidators: true })
-    .orFail(() => new NotFoundError("Передан несуществующий _id карточки"))
+    .orFail(() => new NotFoundError(MESSAGES.CARD_NOT_FOUND))
     .then((card) => res.status(STATUS_CODES.OK).send(card))
     .catch((err) => {
       if (err.name === "CastError") {
-        return next(
-          new BadRequestError("Некорректные данные для изменения лайка")
-        );
+        return next(new BadRequestError(MESSAGES.INVALID_LIKE_DATA));
       }
       return next(err);
     });

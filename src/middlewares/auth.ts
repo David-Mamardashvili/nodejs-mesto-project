@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { STATUS_CODES } from "../utils/constants";
+import { STATUS_CODES, MESSAGES } from "../utils/constants";
 
 interface IPayload {
   _id: string;
@@ -14,7 +14,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
   if (!authorization || !authorization.startsWith("Bearer ")) {
     return res
       .status(STATUS_CODES.UNAUTHORIZED)
-      .send({ message: "Необходима авторизация" });
+      .send({ message: MESSAGES.UNAUTHORIZED });
   }
 
   const token = authorization.replace("Bearer ", "");
@@ -23,7 +23,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     if (err) {
       return res
         .status(STATUS_CODES.UNAUTHORIZED)
-        .send({ message: "Неверный токен" });
+        .send({ message: MESSAGES.UNAUTHORIZED });
     }
 
     req.user = payload as IPayload;

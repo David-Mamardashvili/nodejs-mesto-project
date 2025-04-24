@@ -10,7 +10,7 @@ import cardRouter from "./routes/cardRoutes";
 import { requestLogger, errorLogger } from "./middlewares/logger";
 import { errorHandler } from "./middlewares/errorHandler";
 import { validateSignin, validateSignup } from "./middlewares/validators";
-import { STATUS_CODES } from "./utils/constants"; // добавили импорт констант
+import { STATUS_CODES, MESSAGES } from "./utils/constants";
 
 const { PORT = 3000, MONGO_URL = "mongodb://localhost:27017/mestodb" } =
   process.env;
@@ -22,7 +22,7 @@ mongoose.connect(MONGO_URL);
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: "Слишком много запросов, попробуйте позже.",
+  message: MESSAGES.TOO_MANY_REQUESTS,
 });
 app.use(limiter);
 
@@ -40,7 +40,7 @@ app.use("/cards", cardRouter);
 app.use("*", (req: Request, res: Response) => {
   res
     .status(STATUS_CODES.NOT_FOUND)
-    .send({ message: "Запрашиваемый ресурс не найден" });
+    .send({ message: MESSAGES.ROUTE_NOT_FOUND });
 });
 
 app.use(errorLogger);

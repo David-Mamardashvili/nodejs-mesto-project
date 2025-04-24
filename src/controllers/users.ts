@@ -6,7 +6,7 @@ import BadRequestError from "../errors/BadRequestError";
 import NotFoundError from "../errors/NotFoundError";
 import ConflictError from "../errors/ConflictError";
 import UnauthorizedError from "../errors/UnauthorizedError";
-import { STATUS_CODES } from "../utils/constants";
+import { STATUS_CODES, MESSAGES } from "../utils/constants";
 
 const { JWT_SECRET = "dev-secret-key" } = process.env;
 
@@ -24,7 +24,7 @@ export const getCurrentUser = (
   const userId = req.user._id;
 
   User.findById(userId)
-    .orFail(() => new NotFoundError("Пользователь не найден"))
+    .orFail(() => new NotFoundError(MESSAGES.USER_NOT_FOUND))
     .then((user) => res.status(STATUS_CODES.OK).send(user))
     .catch(next);
 };
@@ -37,13 +37,11 @@ export const getUserById = (
   const { userId } = req.params;
 
   User.findById(userId)
-    .orFail(() => new NotFoundError("Пользователь не найден"))
+    .orFail(() => new NotFoundError(MESSAGES.USER_NOT_FOUND))
     .then((user) => res.status(STATUS_CODES.OK).send(user))
     .catch((err) => {
       if (err.name === "CastError") {
-        return next(
-          new BadRequestError("Передан некорректный _id пользователя")
-        );
+        return next(new BadRequestError(MESSAGES.INVALID_USER_ID));
       }
       return next(err);
     });
@@ -60,16 +58,10 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
     )
     .catch((err) => {
       if (err.code === 11000) {
-        return next(
-          new ConflictError("Пользователь с таким email уже существует")
-        );
+        return next(new ConflictError(MESSAGES.DUPLICATE_EMAIL));
       }
       if (err.name === "ValidationError") {
-        return next(
-          new BadRequestError(
-            "Переданы некорректные данные при создании пользователя"
-          )
-        );
+        return next(new BadRequestError(MESSAGES.BAD_REQUEST_USER_CREATE));
       }
       return next(err);
     });
@@ -85,15 +77,19 @@ const updateUserField = (
     new: true,
     runValidators: true,
   })
-    .orFail(() => new NotFoundError("Пользователь с указанным _id не найден"))
+    .orFail(() => new NotFoundError(MESSAGES.USER_NOT_FOUND))
     .then((user) => res.status(STATUS_CODES.OK).send(user))
     .catch((err) => {
       if (err.name === "ValidationError") {
-        return next(
-          new BadRequestError(
-            "Переданы некорректные данные при обновлении профиля"
-          )
+        const isAvatarUpdate = Object.prototype.hasOwnProperty.call(
+          updateData,
+          "avatar"
         );
+        const message = isAvatarUpdate
+          ? MESSAGES.BAD_REQUEST_AVATAR_UPDATE
+          : MESSAGES.BAD_REQUEST_PROFILE_UPDATE;
+
+        return next(new BadRequestError(message));
       }
       return next(err);
     });
@@ -128,12 +124,12 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
     .select("+password")
     .then((user) => {
       if (!user) {
-        throw new UnauthorizedError("Неправильные почта или пароль");
+        throw new UnauthorizedError(MESSAGES.UNAUTHORIZED);
       }
 
       return bcrypt.compare(password, user.password).then((matched) => {
         if (!matched) {
-          throw new UnauthorizedError("Неправильные почта или пароль");
+          throw new UnauthorizedError(MESSAGES.UNAUTHORIZED);
         }
 
         const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
