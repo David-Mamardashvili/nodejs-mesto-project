@@ -14,7 +14,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
   if (!authorization || !authorization.startsWith("Bearer ")) {
     return res
       .status(STATUS_CODES.UNAUTHORIZED)
-      .send({ message: MESSAGES.UNAUTHORIZED });
+      .send({ message: MESSAGES.AUTH_REQUIRED });
   }
 
   const token = authorization.replace("Bearer ", "");

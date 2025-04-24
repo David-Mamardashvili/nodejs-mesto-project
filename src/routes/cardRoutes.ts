@@ -7,7 +7,7 @@ import {
   dislikeCard,
 } from "../controllers/cards";
 import { auth } from "../middlewares/auth";
-import { validateCardId } from "../middlewares/validators";
+import { validateCardId, validateCardCreate } from "../middlewares/validators";
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.use(auth);
 
 router.get("/", getCards);
 
-router.post("/", createCard);
+router.post("/", validateCardCreate, createCard);
 
 router.delete("/:cardId", validateCardId, deleteCard);
 

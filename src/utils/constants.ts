@@ -15,6 +15,7 @@ export const MESSAGES = {
   INVALID_USER_ID: "Передан некорректный _id пользователя",
   INVALID_CARD_ID: "Некорректный _id карточки",
   UNAUTHORIZED: "Неправильные почта или пароль",
+  AUTH_REQUIRED: "Необходима авторизация",
   FORBIDDEN_CARD_DELETE: "Вы не можете удалить чужую карточку",
   CARD_NOT_FOUND: "Карточка не найдена",
   DUPLICATE_EMAIL: "Пользователь с таким email уже существует",

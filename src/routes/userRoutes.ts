@@ -7,7 +7,11 @@ import {
   updateAvatar,
 } from "../controllers/users";
 import { auth } from "../middlewares/auth";
-import { validateUserId } from "../middlewares/validators";
+import {
+  validateUserId,
+  validateProfileUpdate,
+  validateAvatarUpdate,
+} from "../middlewares/validators";
 
 const router = express.Router();
 
@@ -19,8 +23,8 @@ router.get("/me", getCurrentUser);
 
 router.get("/:userId", validateUserId, getUserById);
 
-router.patch("/me", updateProfile);
+router.patch("/me", validateProfileUpdate, updateProfile);
 
-router.patch("/me/avatar", updateAvatar);
+router.patch("/me/avatar", validateAvatarUpdate, updateAvatar);
 
 export default router;
