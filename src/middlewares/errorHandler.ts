@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { STATUS_CODES } from "../utils/constants";
 
 export const errorHandler = (
   err: { statusCode?: number; message: string },
@@ -6,9 +7,12 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  const { statusCode = 500, message } = err;
+  const { statusCode = STATUS_CODES.INTERNAL_SERVER_ERROR, message } = err;
 
   res.status(statusCode).send({
-    message: statusCode === 500 ? "На сервере произошла ошибка" : message,
+    message:
+      statusCode === STATUS_CODES.INTERNAL_SERVER_ERROR
+        ? "На сервере произошла ошибка"
+        : message,
   });
 };

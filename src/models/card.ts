@@ -1,4 +1,5 @@
 import { Schema, model, Types } from "mongoose";
+import isURL from "validator/lib/isURL";
 
 export interface ICard {
   name: string;
@@ -19,6 +20,10 @@ const cardSchema = new Schema<ICard>(
     link: {
       type: String,
       required: [true, 'Поле "link" должно быть заполнено'],
+      validate: {
+        validator: (v: string) => isURL(v),
+        message: 'Поле "link" должно быть валидным URL',
+      },
     },
     owner: {
       type: Schema.Types.ObjectId,

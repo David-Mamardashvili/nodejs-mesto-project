@@ -16,3 +16,15 @@ export const validateSignin = celebrate({
     password: Joi.string().required(),
   }),
 });
+
+export const validateUserId = celebrate({
+  [Segments.PARAMS]: Joi.object().keys({
+    userId: Joi.string().length(24).hex().required(),
+  }),
+});
+
+export const validateCardId = celebrate({
+  [Segments.PARAMS]: Joi.object().keys({
+    cardId: Joi.string().length(24).hex().required(),
+  }),
+});

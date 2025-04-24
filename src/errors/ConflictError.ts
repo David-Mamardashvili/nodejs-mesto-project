@@ -1,11 +1,11 @@
-class ConflictError extends Error {
+import { STATUS_CODES } from "../utils/constants";
+
+export default class ConflictError extends Error {
   statusCode: number;
 
   constructor(message: string) {
     super(message);
     this.name = "ConflictError";
-    this.statusCode = 409;
+    this.statusCode = STATUS_CODES.CONFLICT;
   }
 }
-
-export default ConflictError;

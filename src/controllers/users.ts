@@ -1,17 +1,18 @@
 import { Request, Response, NextFunction } from "express";
-import User from "../models/user";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import User from "../models/user";
 import BadRequestError from "../errors/BadRequestError";
 import NotFoundError from "../errors/NotFoundError";
 import ConflictError from "../errors/ConflictError";
 import UnauthorizedError from "../errors/UnauthorizedError";
+import { STATUS_CODES } from "../utils/constants";
 
 const { JWT_SECRET = "dev-secret-key" } = process.env;
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => {
   User.find({})
-    .then((users) => res.status(200).send(users))
+    .then((users) => res.status(STATUS_CODES.OK).send(users))
     .catch(next);
 };
 
@@ -24,7 +25,7 @@ export const getCurrentUser = (
 
   User.findById(userId)
     .orFail(() => new NotFoundError("Пользователь не найден"))
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(STATUS_CODES.OK).send(user))
     .catch(next);
 };
 
@@ -37,7 +38,7 @@ export const getUserById = (
 
   User.findById(userId)
     .orFail(() => new NotFoundError("Пользователь не найден"))
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(STATUS_CODES.OK).send(user))
     .catch((err) => {
       if (err.name === "CastError") {
         return next(
@@ -55,7 +56,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
     .hash(password, 10)
     .then((hash) => User.create({ name, about, avatar, email, password: hash }))
     .then(({ name, about, avatar, email, _id }) =>
-      res.status(201).send({ name, about, avatar, email, _id })
+      res.status(STATUS_CODES.CREATED).send({ name, about, avatar, email, _id })
     )
     .catch((err) => {
       if (err.code === 11000) {
@@ -74,21 +75,18 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
-export const updateProfile = (
-  req: Request,
+const updateUserField = (
+  userId: string,
+  updateData: Partial<{ name: string; about: string; avatar: string }>,
   res: Response,
   next: NextFunction
 ) => {
-  const { name, about } = req.body;
-  const userId = req.user._id;
-
-  User.findByIdAndUpdate(
-    userId,
-    { name, about },
-    { new: true, runValidators: true }
-  )
+  User.findByIdAndUpdate(userId, updateData, {
+    new: true,
+    runValidators: true,
+  })
     .orFail(() => new NotFoundError("Пользователь с указанным _id не найден"))
-    .then((user) => res.send(user))
+    .then((user) => res.status(STATUS_CODES.OK).send(user))
     .catch((err) => {
       if (err.name === "ValidationError") {
         return next(
@@ -101,27 +99,26 @@ export const updateProfile = (
     });
 };
 
+export const updateProfile = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { name, about } = req.body;
+  const userId = String(req.user._id);
+
+  updateUserField(userId, { name, about }, res, next);
+};
+
 export const updateAvatar = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   const { avatar } = req.body;
-  const userId = req.user._id;
+  const userId = String(req.user._id);
 
-  User.findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true })
-    .orFail(() => new NotFoundError("Пользователь с указанным _id не найден"))
-    .then((user) => res.send(user))
-    .catch((err) => {
-      if (err.name === "ValidationError") {
-        return next(
-          new BadRequestError(
-            "Переданы некорректные данные при обновлении аватара"
-          )
-        );
-      }
-      return next(err);
-    });
+  updateUserField(userId, { avatar }, res, next);
 };
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
@@ -143,7 +140,7 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
           expiresIn: "7d",
         });
 
-        res.send({ token });
+        res.status(STATUS_CODES.OK).send({ token });
       });
     })
     .catch(next);
